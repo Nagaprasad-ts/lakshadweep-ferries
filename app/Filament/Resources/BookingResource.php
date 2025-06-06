@@ -23,6 +23,11 @@ use Filament\Tables\Actions\ActionGroup;
 use Filament\Tables\Actions\DeleteAction;
 use Filament\Tables\Actions\EditAction;
 use Filament\Tables\Actions\ViewAction;
+use Filament\Infolists;
+use Filament\Infolists\Infolist;
+use Filament\Infolists\Components\Section;
+use Filament\Infolists\Components\TextEntry;
+use Filament\Infolists\Components\IconEntry;
 
 class BookingResource extends Resource
 {
@@ -119,10 +124,6 @@ class BookingResource extends Resource
                 ->openUrlInNewTab(),
                 Tables\Columns\TextColumn::make('location')->label('Location'),
                 Tables\Columns\TextColumn::make('booking_date')->date(),
-                // Tables\Columns\TextColumn::make('Adults'),
-                // Tables\Columns\TextColumn::make('Children'),
-                // Tables\Columns\TextColumn::make('Kids'),
-                // Tables\Columns\TextColumn::make('Infants'),
                 Tables\Columns\TextColumn::make('price')
                     ->money('INR'),
                 Tables\Columns\IconColumn::make('is_active')
@@ -175,6 +176,51 @@ class BookingResource extends Resource
             ]);
     }
 
+    public static function infolist(Infolist $infolist): Infolist
+    {
+        return $infolist->schema([
+            Section::make('Guest Info')
+                ->schema([
+                    TextEntry::make('guest_name')
+                        ->label('Guest Name'),
+                    TextEntry::make('slug')
+                        ->label('Booking Link')
+                        ->color('primary')
+                        ->formatStateUsing(fn ($state) => $state)
+                        ->url(fn ($record) => config('app.url') . "/bookings/{$record->slug}")
+                        ->icon('heroicon-o-link')
+                        ->openUrlInNewTab(),
+                    TextEntry::make('location')->label('Location'),
+                    TextEntry::make('booking_date')->label('Booking Date')->date(),
+                ])
+                ->columns(2),
+
+            Section::make('Guest Counts')
+                ->schema([
+                    TextEntry::make('Adults')->label('Adults')->numeric(),
+                    TextEntry::make('Children')->label('Children')->numeric(),
+                    TextEntry::make('Kids')->label('Kids')->numeric(),
+                    TextEntry::make('Infants')->label('Infants')->numeric(),
+                ])
+                ->columns(2),
+
+            Section::make('Pricing')
+                ->schema([
+                    TextEntry::make('price')->money('INR'),
+                ]),
+
+            Section::make('Payment Status')
+                ->schema([
+                    IconEntry::make('is_active')->label('Active')->boolean(),
+                    IconEntry::make('is_paid')->label('Paid')->boolean(),
+                    TextEntry::make('razorpay_order_id')->label('Razorpay Order ID'),
+                    TextEntry::make('razorpay_payment_id')->label('Razorpay Payment ID'),
+                    TextEntry::make('payment_status')->label('Payment Status'),
+                ])
+                ->columns(2),
+        ]);
+    }
+
     public static function getRelations(): array
     {
         return [
@@ -188,6 +234,7 @@ class BookingResource extends Resource
             'index' => Pages\ListBookings::route('/'),
             'create' => Pages\CreateBooking::route('/create'),
             'edit' => Pages\EditBooking::route('/{record}/edit'),
+            'view' => Pages\ViewBooking::route('/{record}'),
         ];
     }
 }
