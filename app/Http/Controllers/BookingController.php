@@ -10,7 +10,6 @@ use Illuminate\Support\Facades\Log; // Only needed imports
 class BookingController extends Controller
 {
     // Show booking and initialize Razorpay order if needed
-
     public function show($slug)
     {
         $booking = Booking::where('slug', $slug)->firstOrFail();
@@ -25,7 +24,7 @@ class BookingController extends Controller
                 $api = new Api(env('RAZORPAY_KEY'), env('RAZORPAY_SECRET'));
                 $razorpayOrder = $api->order->create([
                     'receipt' => $booking->slug . '_' . time(),
-                    'amount' => $booking->price * 100, // in paise
+                    'amount' => (int) ($booking->price * 0.3 * 100), // in paise
                     'currency' => 'INR',
                     'notes' => [
                         'booking_slug' => $booking->slug,
@@ -107,6 +106,12 @@ class BookingController extends Controller
     public function failed($slug)
     {
         $booking = Booking::where('slug', $slug)->firstOrFail();
-        return view('bookings.failed', compact('booking'));
+
+        if (!$booking->is_active || $booking->is_paid) {
+            return view('bookings.expired');
+        }
+        
+        $orderId = $booking->razorpay_order_id;
+        return view('bookings.failed', compact('booking', 'orderId'));
     }
 }
