@@ -5,7 +5,7 @@ namespace App\Http\Controllers;
 use App\Models\Booking;
 use Illuminate\Http\Request;
 use Razorpay\Api\Api;
-use Illuminate\Support\Facades\Log; // Only needed imports
+use Barryvdh\DomPDF\Facade\Pdf;
 
 class BookingController extends Controller
 {
@@ -72,12 +72,15 @@ class BookingController extends Controller
             ];
             $api->utility->verifyPaymentSignature($attributes);
 
+            $payment = $api->payment->fetch($paymentId);
+
             // Update booking as paid and inactive
             $booking->update([
                 'is_paid' => true,
                 'is_active' => false,
                 'razorpay_payment_id' => $paymentId,
-                'payment_status' => 'completed'
+                'payment_status' => 'completed',
+                'payment_method' => $payment['method'],
             ]);
 
             return redirect()->route('thank-you', $booking->slug);
@@ -86,7 +89,7 @@ class BookingController extends Controller
 
             $booking = Booking::where('razorpay_order_id', $orderId)->first();
             if ($booking) {
-                return redirect()->route('failed', $booking->slug)->with('error', 'Payment verification failed.');
+                return redirect()->route('failed', $booking->slug);
             }
             return redirect()->route('home')->with('error', 'Payment failed and booking not found.');
         }
@@ -103,14 +106,17 @@ class BookingController extends Controller
     }
 
     // Show failed page for unsuccessful payments
-    public function failed($slug)
+    public function download($slug)
     {
         $booking = Booking::where('slug', $slug)->firstOrFail();
+        $pdf = Pdf::loadView('pdf.invoice', ['booking' => $booking]);
 
-        if (!$booking->is_active || $booking->is_paid) {
-            return view('bookings.expired');
-        }
-        
+        $filename = $booking->slug . '_invoice.pdf';
+        return $pdf->download($filename);
+    }
+
+    public function failed($slug) {
+        $booking = Booking::where('slug', $slug)->firstOrFail();
         $orderId = $booking->razorpay_order_id;
         return view('bookings.failed', compact('booking', 'orderId'));
     }

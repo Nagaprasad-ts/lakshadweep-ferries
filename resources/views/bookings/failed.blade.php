@@ -5,10 +5,15 @@
         <h1 class="text-3xl font-bold text-red-700 mb-4">😔 Sorry! Payment Failed!</h1>
         <p class="text-lg text-gray-700">Retry Payment, <b>{{ $booking->guest_name }}</b>.</p>
         <p class="mt-2">Payment for <br /><strong>{{ $booking->location }}</strong> on <strong>{{ \Carbon\Carbon::parse($booking->booking_date)->format('F j, Y') }}</strong>.</p>
+        <div class="mt-3 pt-3 flex justify-between font-bold text-lg">
+            <span>Total Fee</span>
+            <span>₹{{ number_format($booking->price, 0) }}</span>
+        </div>
         <button type="button" id="rzp-button1"
                 class="bg-red-600 hover:bg-red-700 text-white font-semibold py-2 px-4 rounded-lg w-full transition duration-200 mt-6">
-                💳 Pay Now - ₹{{ number_format($booking->price, 0) }}
-            </button>
+            💳 Pay Now - ₹{{ number_format($booking->price * 0.3, 0) }}
+        </button>
+            <p class="mt-3 italic font-semibold">Pay only <span class="text-green-500 font-bold">30%</span> of the total price. Rest can be paid on arrival.</p>
 
             <div id="payment-loading" class="hidden mt-4 text-center">
                 <div class="inline-flex items-center px-4 py-2 font-semibold leading-6 text-sm shadow rounded-md text-white bg-indigo-500 hover:bg-indigo-400 transition ease-in-out duration-150 cursor-not-allowed">
@@ -28,7 +33,7 @@
         document.addEventListener('DOMContentLoaded', function() {
             var options = {
                 "key": "{{ env('RAZORPAY_KEY') }}", 
-                "amount": "{{ $booking->price * 100 }}", 
+                "amount": "{{ $booking->price * 0.3 * 100 }}", 
                 "currency": "INR",
                 "name": "{{ env('APP_NAME') }}", 
                 "description": "Booking Payment for {{ $booking->location }}",
